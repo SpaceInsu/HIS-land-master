@@ -317,7 +317,7 @@ function renderHints(q) {
     row('아파트', esc(q.name), 'name'),
     row('지역', esc(q.region)),
     row('전용면적', `${q.area}㎡ <small>약 ${Math.round(q.area / 3.3058)}평</small>`),
-    row(q.kb ? '시세 기준' : '거래 시점', esc(q.ym)),
+    q.kb ? row('시세 기준', esc(q.ym)) : row('최근 거래일', esc(q.date || q.ym)),
     ...(q.kbAvg ? [row('참고 시세', `KB 동네 평균 ${won(q.kbAvg)} <small>같은 면적 기준</small>`)] : []),
     '<div class="sec">세부 정보</div>',
     row('준공', q.built ? `${q.built}년` : esc(q.builtNote || '정보 준비 중')),
