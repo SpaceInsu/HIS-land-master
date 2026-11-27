@@ -54,11 +54,22 @@ def t(item, *names):
     return ""
 
 def fetch(lawd, ym):
+    # 국토부 서버가 자주 느리거나 503을 줘서 최대 4번까지 다시 시도
+    import time
+    for attempt in range(4):
+        try:
+            return _fetch(lawd, ym)
+        except Exception as e:
+            if "SERVICE_KEY" in str(e) or attempt == 3:
+                raise
+            time.sleep(3 * (attempt + 1))
+
+def _fetch(lawd, ym):
     rows, page = [], 1
     while True:
         q = urllib.parse.urlencode({"serviceKey": KEY, "LAWD_CD": lawd, "DEAL_YMD": ym, "numOfRows": 1000, "pageNo": page})
         try:
-            with urllib.request.urlopen(f"{URL}?{q}", timeout=30) as r:
+            with urllib.request.urlopen(f"{URL}?{q}", timeout=60) as r:
                 body = r.read()
         except urllib.error.HTTPError as e:
             raise RuntimeError(f"HTTP {e.code} {lawd} {ym}: {e.read()[:300].decode('utf-8', 'replace')}")
@@ -82,6 +93,12 @@ def main():
           f" / 끝이 == {'예' if KEY.endswith('==') else '아니오'} / 허용 외 문자 {'있음' if _re.search(r'[^A-Za-z0-9+/=%]', raw.strip()) else '없음'}")
     yms = months_back(MONTHS)
     out, seen_regions, fails = [], 0, 0
+    prev = {}
+    try:
+        for it in json.load(open("data/questions.json", encoding="utf-8")).get("items", []):
+            prev.setdefault((it.get("sido"), it.get("sgg")), []).append(it)
+    except Exception:
+        pass
     for lawd, sido, sgg in REGIONS:
         best = {}
         for ym in yms:
@@ -114,6 +131,10 @@ def main():
                 if key not in best or rec["date"] > best[key]["date"]:
                     best[key] = rec
         recs = list(best.values())
+        if not recs and prev.get((sido, sgg)):
+            out += prev[(sido, sgg)]; seen_regions += 1
+            print(f"{sido} {sgg}: 이번엔 못 받아서 이전 문제 {len(prev[(sido, sgg)])}개 유지")
+            continue
         if recs:
             seen_regions += 1
             random.shuffle(recs)
