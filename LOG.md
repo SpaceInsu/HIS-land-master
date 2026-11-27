@@ -7,3 +7,4 @@
 - 의견 보내기: feedback.js (구글 폼 연결 전에는 브라우저에 임시 보관). 처리 절차는 .claude/skills/his-land-feedback (PR #2)
 - 정답 기준 안내 문구를 '단지 실거래가(최근 3개월), KB 동네 평균은 참고 시세'로 갱신 (데이터 스레드 변경 반영)
 - 글씨체: 제목·가격용 Black Han Sans를 빼고 전부 IBM Plex Sans KR(산세리프) 굵게로 통일 (PR #2)
+- 의견 보내기를 구글 폼 대신 시트 직접 기록으로 변경: tools/feedback-apps-script.gs(시트에 붙일 코드), feedback.js ENDPOINT
