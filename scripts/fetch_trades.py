@@ -75,6 +75,10 @@ def fetch(lawd, ym):
 def main():
     if not KEY:
         sys.exit("DATA_GO_KR_KEY 가 없습니다 (GitHub 저장소 Settings → Secrets → Actions 에 등록)")
+    raw = os.environ.get("DATA_GO_KR_KEY", "")
+    import re as _re
+    print(f"[키 점검] 길이 {len(raw)} / 앞뒤 공백 {'있음' if raw != raw.strip() else '없음'} / %포함 {'예' if '%' in raw else '아니오'}"
+          f" / 끝이 == {'예' if KEY.endswith('==') else '아니오'} / 허용 외 문자 {'있음' if _re.search(r'[^A-Za-z0-9+/=%]', raw.strip()) else '없음'}")
     yms = months_back(MONTHS)
     out, seen_regions, fails = [], 0, 0
     for lawd, sido, sgg in REGIONS:
