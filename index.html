@@ -21,6 +21,7 @@
   #svgmap { display:flex; align-items:center; justify-content:center; padding:10px; }
   .maptools { position:absolute; top:10px; right:10px; z-index:5; display:flex; gap:6px; }
   .maptools button { padding:8px 12px; font-size:13px; background:#fff; color:var(--ink); box-shadow:0 1px 4px rgba(0,0,0,.2); }
+  .rv-float { position:absolute; left:12px; bottom:12px; z-index:6; font-size:17px; padding:14px 20px; box-shadow:0 2px 10px rgba(0,0,0,.3); }
   .maptools button.on { background:var(--accent); color:#fff; }
   button { font:inherit; border:0; border-radius:10px; padding:12px 18px; cursor:pointer; background:var(--accent); color:#fff; font-weight:600; min-height:44px; }
   button.ghost { background:#e6f2f0; color:var(--accent); }
@@ -75,8 +76,9 @@
         <div id="kakaomap"></div>
         <div id="svgmap"><svg id="kmap" viewBox="0 0 600 690" style="height:100%;max-width:100%"></svg></div>
         <div class="maptools" id="maptools" hidden>
-          <button data-type="sky" class="on">위성</button><button data-type="road">일반 지도</button>
+          <button data-type="road" class="on">일반 지도</button><button data-type="sky">위성</button>
         </div>
+        <button id="btn-rv-map" class="rv-float">📷 로드뷰 보기</button>
       </div>
       <div class="card">
         <h3 style="margin-top:0">힌트</h3>
@@ -198,14 +200,14 @@ document.querySelectorAll('#maptools button').forEach(b => b.addEventListener('c
 function drawKakao(q) {
   const pos = new kakao.maps.LatLng(q.lat, q.lng);
   if (!kmap) {
-    // 기본은 위성 사진: 일반 지도는 단지 이름이 보여 정답이 드러날 수 있음
-    kmap = new kakao.maps.Map($('kakaomap'), { center: pos, level: 3, mapTypeId: kakao.maps.MapTypeId.SKYVIEW });
+    // 기본은 일반 지도 (단지 이름이 보일 수 있음: 사용자 결정)
+    kmap = new kakao.maps.Map($('kakaomap'), { center: pos, level: 3, mapTypeId: kakao.maps.MapTypeId.ROADMAP });
     kmap.addControl(new kakao.maps.ZoomControl(), kakao.maps.ControlPosition.LEFT);
     kmarker = new kakao.maps.Marker({ position: pos, map: kmap });
   }
   $('svgmap').style.display = 'none';
   $('maptools').hidden = false;
-  kmap.relayout(); setMapType('sky');
+  kmap.relayout();
   kmap.setLevel(3); kmap.setCenter(pos); kmarker.setPosition(pos);
 }
 
@@ -247,6 +249,7 @@ function openRoadview() {
 }
 function closeRoadview() { $('rv-modal').classList.remove('on'); }
 $('btn-rv').addEventListener('click', openRoadview);
+$('btn-rv-map').addEventListener('click', openRoadview);
 $('rv-close').addEventListener('click', closeRoadview);
 $('rv-modal').addEventListener('click', e => { if (e.target.id === 'rv-modal') closeRoadview(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeRoadview(); });
