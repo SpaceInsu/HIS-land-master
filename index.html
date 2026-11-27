@@ -4,63 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>이 집 얼마?</title>
-<style>
-  :root { --bg:#f6f4ef; --ink:#1f2328; --muted:#6b7280; --accent:#0f766e; --warn:#b45309; --card:#fff; }
-  * { box-sizing: border-box; min-width:0; }
-  body { margin:0; font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; background:var(--bg); color:var(--ink); }
-  header { padding:14px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e5e2da; background:#fff; }
-  header h1 { font-size:20px; margin:0; }
-  .badge { font-size:12px; background:#fef3c7; color:var(--warn); padding:3px 8px; border-radius:999px; }
-  main { max-width:1100px; margin:0 auto; padding:16px; }
-  .screen { display:none; } .screen.on { display:block; }
-  .card { background:var(--card); border-radius:14px; padding:18px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
-  .grid { display:grid; grid-template-columns: minmax(0,1.4fr) minmax(0,1fr); gap:16px; }
-  @media (max-width: 800px) { .grid { grid-template-columns:1fr; } #mapbox { height:360px !important; } }
-  #mapbox { position:relative; height:520px; border-radius:14px; overflow:hidden; background:#dde7e4; }
-  #kakaomap, #svgmap { position:absolute; inset:0; width:100%; height:100%; }
-  #svgmap { display:flex; align-items:center; justify-content:center; padding:10px; }
-  .maptools { position:absolute; top:10px; right:10px; z-index:5; display:flex; gap:6px; }
-  .maptools button { padding:8px 12px; font-size:13px; background:#fff; color:var(--ink); box-shadow:0 1px 4px rgba(0,0,0,.2); }
-  .rv-float { position:absolute; left:12px; bottom:12px; z-index:6; font-size:17px; padding:14px 20px; box-shadow:0 2px 10px rgba(0,0,0,.3); }
-  .maptools button.on { background:var(--accent); color:#fff; }
-  button { font:inherit; border:0; border-radius:10px; padding:12px 18px; cursor:pointer; background:var(--accent); color:#fff; font-weight:600; min-height:44px; }
-  button.ghost { background:#e6f2f0; color:var(--accent); }
-  .hints div { display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px dashed #eee; }
-  .hints span:first-child { color:var(--muted); white-space:nowrap; }
-  .price { font-size:30px; font-weight:800; text-align:center; margin:10px 0; white-space:nowrap; }
-  input[type=range] { width:100%; }
-  .row { display:flex; gap:8px; align-items:center; margin-top:10px; }
-  .row input { flex:1; padding:10px; font-size:16px; border:1px solid #ddd; border-radius:10px; }
-  .ticks { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); }
-  .topbar { display:flex; justify-content:space-between; margin-bottom:12px; color:var(--muted); }
-  .big { font-size:42px; font-weight:800; color:var(--accent); }
-  .note { font-size:12px; color:var(--warn); margin-top:8px; }
-  table { width:100%; border-collapse:collapse; } td, th { padding:8px; border-bottom:1px solid #eee; text-align:left; }
-  td.num, th.num { text-align:right; white-space:nowrap; }
-  .center { text-align:center; }
-  details { margin-top:18px; text-align:left; font-size:14px; color:var(--muted); }
-  .modal { position:fixed; inset:0; background:rgba(15,23,42,.6); display:none; align-items:center; justify-content:center; z-index:100; padding:16px; }
-  .modal.on { display:flex; }
-  .modal-box { background:#fff; border-radius:14px; width:min(1000px,100%); height:min(680px,90vh); display:flex; flex-direction:column; overflow:hidden; }
-  .modal-head { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-bottom:1px solid #eee; }
-  .modal-head button { background:#eee; color:var(--ink); padding:8px 14px; }
-  #rv-wrap { flex:1; position:relative; background:#111; }
-  #roadview { position:absolute; inset:0; }
-  #rv-msg { position:absolute; inset:0; z-index:2; display:flex; align-items:center; justify-content:center; text-align:center; color:#e5e7eb; padding:24px; line-height:1.6; }
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header>
-  <h1>🏠 이 집 얼마?</h1>
+  <h1>이 집 얼마?<small>수도권 실거래가 맞히기</small></h1>
   <span class="badge">초안 · 샘플(추정) 데이터</span>
 </header>
 <main>
   <section id="s-start" class="screen on">
     <div class="card center" style="max-width:560px;margin:40px auto;">
+      <div class="stamp" aria-hidden="true">오늘의<br>매물</div>
       <h2>지도 위 집의 실거래가를 맞혀보세요</h2>
       <p style="color:var(--muted)">출제 지역: 서울 · 경기 · 인천 · 5라운드</p>
       <button id="btn-start">게임 시작</button>
-      <p class="note">⚠️ 이 초안의 가격은 실거래가가 아닌 대략적인 추정값입니다.</p>
+      <p class="note">이 초안의 가격은 실거래가가 아닌 대략적인 추정값입니다.</p>
       <details>
         <summary>카카오 지도 키 설정 (개발·시험용)</summary>
         <p>카카오 개발자 사이트의 <b>JavaScript 키</b>를 넣으면 실제 카카오맵과 로드뷰가 켜집니다. 키는 이 브라우저에만 저장됩니다. 이 페이지 주소가 카카오 앱 설정의 "사이트 도메인"에 등록되어 있어야 합니다.</p>
@@ -79,12 +40,12 @@
         <div class="maptools" id="maptools" hidden>
           <button data-type="road" class="on">일반 지도</button><button data-type="sky">위성</button>
         </div>
-        <button id="btn-rv-map" class="rv-float">📷 로드뷰 보기</button>
+        <button id="btn-rv-map" class="rv-float">로드뷰 보기</button>
       </div>
       <div class="card">
-        <h3 style="margin-top:0">힌트</h3>
+        <h3 style="margin-top:0">매물 정보</h3>
         <div class="hints" id="hints"></div>
-        <div class="row"><button class="ghost" id="btn-rv" style="flex:1">📷 로드뷰로 주변 보기</button></div>
+        <div class="row"><button class="ghost" id="btn-rv" style="flex:1">로드뷰로 동네 둘러보기</button></div>
         <h3>내 예상 가격</h3>
         <div class="price" id="guess-text">5억</div>
         <input type="range" id="guess-range" min="0" max="1000" value="500" aria-label="예상 가격">
@@ -123,7 +84,7 @@
 
 <div class="modal" id="rv-modal" role="dialog" aria-modal="true" aria-label="로드뷰">
   <div class="modal-box">
-    <div class="modal-head"><b>📷 로드뷰</b><button id="rv-close">닫기 ✕</button></div>
+    <div class="modal-head"><b>로드뷰</b><button id="rv-close">닫기</button></div>
     <div id="rv-wrap"><div id="roadview"></div><div id="rv-msg"></div></div>
   </div>
 </div>
