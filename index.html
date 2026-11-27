@@ -146,7 +146,7 @@ function loadKakao() {
   const key = getKey();
   if (!key) { $('key-status').textContent = '키 없음: 단순 지도로 동작합니다.'; return; }
   const s = document.createElement('script');
-  s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(key)}&autoload=false`;
+  s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(key)}&autoload=false&libraries=services`;
   s.onload = () => kakao.maps.load(() => {
     kakaoReady = true;
     $('key-status').textContent = '✅ 카카오 지도 연결됨';
@@ -225,8 +225,48 @@ $('rv-modal').addEventListener('click', e => { if (e.target.id === 'rv-modal') c
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeRoadview(); });
 
 // ===== 게임 진행 =====
-function start() {
-  const pool = [...QUESTIONS].sort(() => Math.random() - 0.5).slice(0, ROUNDS);
+// KB 동네 평균(㎡당 가격) × 실제 아파트 단지 위치로 문제 만들기
+let KB_REGIONS = null, KB_META = null;
+fetch('data/kb_sqm.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null)
+  .then(d => { if (d && d.regions && d.regions.length) { KB_REGIONS = d.regions; KB_META = d; } }).catch(() => {});
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+function searchApts(r) {
+  return new Promise(res => {
+    const ps = new kakao.maps.services.Places();
+    ps.keywordSearch(`${r.sido} ${r.name} 아파트`, (d, st) => {
+      if (st !== kakao.maps.services.Status.OK) return res([]);
+      const key = r.name.split(' ').pop();
+      res(d.filter(x => x.category_name.endsWith('아파트') && x.address_name.includes(key)
+        && !/예정|행복주택|임대/.test(x.place_name)));
+    }, { size: 15 });
+  });
+}
+async function buildKbQuestions() {
+  const out = [];
+  for (const r of shuffle([...KB_REGIONS])) {
+    if (out.length >= ROUNDS) break;
+    const apts = await searchApts(r);
+    if (!apts.length) continue;
+    const a = apts[Math.floor(Math.random() * apts.length)];
+    const area = Math.random() < 0.5 ? 59 : 84;
+    const price = Math.round(r.sqm * area / 100) * 100;
+    if (price < MIN_P || price > MAX_P) continue;
+    const dong = (a.address_name.split(' ').find(w => /[동읍면리가]$/.test(w) && !w.endsWith('시')) || '');
+    out.push({ kb: true, name: a.place_name, region: `${r.sido} ${r.name} ${dong}`.trim(), area, ym: KB_META.basis,
+      price, sqm: r.sqm, lat: +a.y, lng: +a.x });
+  }
+  return out;
+}
+async function start() {
+  let pool = null;
+  if (kakaoReady && KB_REGIONS && kakao.maps.services) {
+    $('btn-start').textContent = '문제 만드는 중…';
+    try { pool = await buildKbQuestions(); } catch (e) { pool = null; }
+    $('btn-start').textContent = '게임 시작';
+    if (!pool || pool.length < ROUNDS) pool = null;
+  }
+  if (pool) document.querySelector('.badge').textContent = `KB부동산 ${KB_META.basis} 동네 평균 기준`;
+  if (!pool) pool = shuffle([...QUESTIONS]).slice(0, ROUNDS);
   state = { pool, i: 0, total: 0, log: [] };
   show('s-round');
   loadRound();
@@ -237,7 +277,8 @@ function loadRound() {
   $('total-label').textContent = `누적 ${state.total.toLocaleString()}점`;
   $('hints').innerHTML = [
     ['지역', q.region], ['전용면적', `${q.area}㎡ (약 ${Math.round(q.area / 3.3058)}평)`],
-    ['층', `${q.floor}층`], ['준공', `${q.built}년`], ['거래 시점', q.ym],
+    ...(q.floor ? [['층', `${q.floor}층`]] : []), ...(q.built ? [['준공', `${q.built}년`]] : []),
+    [q.kb ? '시세 기준' : '거래 시점', q.ym],
   ].map(([k, v]) => `<div><span>${k}</span><span>${v}</span></div>`).join('');
   setGuess(50000);
   if (kakaoReady) drawKakao(q); else drawSvg(q);
@@ -257,8 +298,8 @@ $('btn-submit').addEventListener('click', () => {
   state.total += score;
   state.log.push({ q, g, score });
   $('r-name').textContent = q.name;
-  $('r-addr').textContent = `${q.region} · ${q.area}㎡ · ${q.ym} 거래`;
-  $('r-actual').textContent = won(q.price) + (QUESTIONS === SAMPLE ? ' (추정값)' : '');
+  $('r-addr').textContent = q.kb ? `${q.region} · ${q.area}㎡ · KB ${q.ym} 동네 평균 기준 (㎡당 ${Math.round(q.sqm).toLocaleString()}만원)` : `${q.region} · ${q.area}㎡ · ${q.ym} 거래`;
+  $('r-actual').textContent = won(q.price) + (q.kb ? ' (KB 평균)' : QUESTIONS === SAMPLE ? ' (추정값)' : '');
   $('r-guess').textContent = won(g);
   $('r-score').textContent = `+${score.toLocaleString()}점`;
   $('r-comment').textContent = err < 0.05 ? '🎯 족집게!' : err < 0.15 ? '👏 아주 가까워요' : err < 0.35 ? '🙂 감은 있어요' : '😅 시세가 만만치 않죠';
