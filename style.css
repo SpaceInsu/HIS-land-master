@@ -333,3 +333,4 @@ td, th { vertical-align: middle; line-height: 1.5; }
   .price { font-size: 38px; height: 72px; }
   .big { font-size: 42px; }
 }
+.note small { display: block; margin-top: 4px; font-size: 12px; }
