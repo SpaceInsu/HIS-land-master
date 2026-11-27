@@ -107,11 +107,14 @@ const SAMPLE = [
 ];
 const ROUNDS = 5, MAX = 5000;
 // 실제 문제집: data/questions.json 이 있으면 그것을 쓰고, 없으면 위 SAMPLE 사용
-let QUESTIONS = SAMPLE, DATA_SOURCE = '샘플(추정)';
+let QUESTIONS = SAMPLE, DATA_SOURCE = '샘플(추정)', REAL = null, REAL_META = null;
 fetch('data/questions.json', { cache: 'no-store' })
   .then(r => r.ok ? r.json() : Promise.reject())
   .then(d => {
-    const list = (d.items || []).filter(q => q.price >= 10000 && q.price <= 500000 && q.lat && q.lng);
+    const items = (d.items || []).filter(q => q.price >= 10000 && q.price <= 500000);
+    // 국토부 실거래가 문제집: 좌표 대신 주소가 들어 있음 → 게임 시작 때 카카오로 위치를 찾음
+    if (items.length >= ROUNDS && items.some(q => q.address && !q.lat)) { REAL = items; REAL_META = d; return; }
+    const list = items.filter(q => q.lat && q.lng);
     if (list.length >= ROUNDS) { QUESTIONS = list; DATA_SOURCE = d.source || '실데이터'; document.querySelector('.badge').textContent = `데이터: ${DATA_SOURCE} · ${d.updated || ''}`; }
   }).catch(() => {});
 
@@ -254,15 +257,41 @@ async function buildKbQuestions() {
   }
   return out;
 }
+// 실거래가 문제: 주소 → 좌표 (카카오 주소검색), KB 동네 평균은 참고용 힌트로 붙임
+function geocode(addr) {
+  return new Promise(res => new kakao.maps.services.Geocoder().addressSearch(addr, (d, st) =>
+    res(st === kakao.maps.services.Status.OK && d[0] ? { lat: +d[0].y, lng: +d[0].x } : null)));
+}
+async function buildRealQuestions() {
+  const out = [];
+  for (const q0 of shuffle([...REAL]).slice(0, 25)) {
+    if (out.length >= ROUNDS) break;
+    if (out.some(o => o.name === q0.name)) continue;
+    const pos = await geocode(q0.address);
+    if (!pos) continue;
+    const q = { ...q0, ...pos, real: true, area: Math.round(q0.area * 10) / 10 };
+    const kb = KB_REGIONS && KB_REGIONS.find(r => r.sido === q.sido && r.name === q.sgg);
+    if (kb) q.kbAvg = Math.round(kb.sqm * q.area / 100) * 100;
+    out.push(q);
+  }
+  return out;
+}
 async function start() {
   let pool = null;
-  if (kakaoReady && KB_REGIONS && kakao.maps.services) {
+  if (kakaoReady && REAL && kakao.maps.services) {
+    $('btn-start').textContent = '문제 만드는 중…';
+    try { pool = await buildRealQuestions(); } catch (e) { pool = null; }
+    $('btn-start').textContent = '게임 시작';
+    if (pool && pool.length >= ROUNDS) document.querySelector('.badge').textContent = `국토부 실거래가 · ${REAL_META.updated} 갱신`;
+    else pool = null;
+  }
+  if (!pool && kakaoReady && KB_REGIONS && kakao.maps.services) {
     $('btn-start').textContent = '문제 만드는 중…';
     try { pool = await buildKbQuestions(); } catch (e) { pool = null; }
     $('btn-start').textContent = '게임 시작';
     if (!pool || pool.length < ROUNDS) pool = null;
   }
-  if (pool) document.querySelector('.badge').textContent = `KB부동산 ${KB_META.basis} 동네 평균 기준`;
+  if (pool && pool[0].kb) document.querySelector('.badge').textContent = `KB부동산 ${KB_META.basis} 동네 평균 기준`;
   if (!pool) pool = shuffle([...QUESTIONS]).slice(0, ROUNDS);
   state = { pool, i: 0, total: 0, log: [] };
   show('s-round');
@@ -289,6 +318,7 @@ function renderHints(q) {
     row('지역', esc(q.region)),
     row('전용면적', `${q.area}㎡ <small>약 ${Math.round(q.area / 3.3058)}평</small>`),
     row(q.kb ? '시세 기준' : '거래 시점', esc(q.ym)),
+    ...(q.kbAvg ? [row('참고 시세', `KB 동네 평균 ${won(q.kbAvg)} <small>같은 면적 기준</small>`)] : []),
     '<div class="sec">세부 정보</div>',
     row('준공', q.built ? `${q.built}년` : esc(q.builtNote || '정보 준비 중')),
     row('세대수', q.households ? `${q.households.toLocaleString()}세대` : esc(q.hhNote || '정보 준비 중')),
@@ -344,8 +374,8 @@ $('btn-submit').addEventListener('click', () => {
   state.total += score;
   state.log.push({ q, g, score });
   $('r-name').textContent = q.name;
-  $('r-addr').textContent = q.kb ? `${q.region} · ${q.area}㎡ · KB ${q.ym} 동네 평균 기준 (㎡당 ${Math.round(q.sqm).toLocaleString()}만원)` : `${q.region} · ${q.area}㎡ · ${q.ym} 거래`;
-  $('r-actual').textContent = won(q.price) + (q.kb ? ' (KB 평균)' : QUESTIONS === SAMPLE ? ' (추정값)' : '');
+  $('r-addr').textContent = q.real ? `${q.region} · ${q.area}㎡ · ${q.floor ? q.floor + '층 · ' : ''}${q.date} 거래` + (q.kbAvg ? ` · 동네 평균보다 ${q.price >= q.kbAvg ? '+' : ''}${Math.round((q.price / q.kbAvg - 1) * 100)}%` : '') : q.kb ? `${q.region} · ${q.area}㎡ · KB ${q.ym} 동네 평균 기준 (㎡당 ${Math.round(q.sqm).toLocaleString()}만원)` : `${q.region} · ${q.area}㎡ · ${q.ym} 거래`;
+  $('r-actual').textContent = won(q.price) + (q.real ? ' (실거래가)' : q.kb ? ' (KB 평균)' : QUESTIONS === SAMPLE ? ' (추정값)' : '');
   $('r-guess').textContent = won(g);
   $('r-score').textContent = `+${score.toLocaleString()}점`;
   $('r-comment').textContent = err < 0.05 ? '🎯 족집게!' : err < 0.15 ? '👏 아주 가까워요' : err < 0.35 ? '🙂 감은 있어요' : '😅 시세가 만만치 않죠';
