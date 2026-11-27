@@ -5,10 +5,10 @@
 - 필요: 환경변수 DATA_GO_KR_KEY (공공데이터포털 일반 인증키, Decoding 키 권장)
 - 좌표는 게임 화면에서 카카오 주소검색으로 찾습니다(여기서는 주소만 저장).
 """
-import json, os, random, sys, datetime, urllib.parse, urllib.request
+import json, os, random, sys, datetime, urllib.parse, urllib.request, urllib.error
 import xml.etree.ElementTree as ET
 
-KEY = os.environ.get("DATA_GO_KR_KEY", "").strip()
+KEY = urllib.parse.unquote(os.environ.get("DATA_GO_KR_KEY", "").strip())  # Encoding 키를 넣어도 동작하게
 MONTHS = int(os.environ.get("MONTHS", "3"))
 PER_REGION = int(os.environ.get("PER_REGION", "12"))
 URL = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"
@@ -56,8 +56,11 @@ def fetch(lawd, ym):
     rows, page = [], 1
     while True:
         q = urllib.parse.urlencode({"serviceKey": KEY, "LAWD_CD": lawd, "DEAL_YMD": ym, "numOfRows": 1000, "pageNo": page})
-        with urllib.request.urlopen(f"{URL}?{q}", timeout=30) as r:
-            body = r.read()
+        try:
+            with urllib.request.urlopen(f"{URL}?{q}", timeout=30) as r:
+                body = r.read()
+        except urllib.error.HTTPError as e:
+            raise RuntimeError(f"HTTP {e.code} {lawd} {ym}: {e.read()[:300].decode('utf-8', 'replace')}")
         root = ET.fromstring(body)
         code = root.findtext(".//resultCode") or ""
         if code not in ("00", "000", ""):
@@ -73,14 +76,17 @@ def main():
     if not KEY:
         sys.exit("DATA_GO_KR_KEY 가 없습니다 (GitHub 저장소 Settings → Secrets → Actions 에 등록)")
     yms = months_back(MONTHS)
-    out, seen_regions = [], 0
+    out, seen_regions, fails = [], 0, 0
     for lawd, sido, sgg in REGIONS:
         best = {}
         for ym in yms:
             try:
                 items = fetch(lawd, ym)
             except Exception as e:
-                print("건너뜀:", e); continue
+                print("건너뜀:", e); fails += 1
+                if fails >= 6 and not out and not best:
+                    sys.exit("처음부터 계속 실패해서 멈춥니다. 위 오류 내용을 확인하세요.")
+                continue
             for it in items:
                 if t(it, "cdealType", "해제여부"):  # 해제(취소)된 거래 제외
                     continue
