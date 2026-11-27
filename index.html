@@ -44,7 +44,8 @@
   .modal-box { background:#fff; border-radius:14px; width:min(1000px,100%); height:min(680px,90vh); display:flex; flex-direction:column; overflow:hidden; }
   .modal-head { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-bottom:1px solid #eee; }
   .modal-head button { background:#eee; color:var(--ink); padding:8px 14px; }
-  #roadview { flex:1; position:relative; background:#111; }
+  #rv-wrap { flex:1; position:relative; background:#111; }
+  #roadview { position:absolute; inset:0; }
   #rv-msg { position:absolute; inset:0; z-index:2; display:flex; align-items:center; justify-content:center; text-align:center; color:#e5e7eb; padding:24px; line-height:1.6; }
 </style>
 </head>
@@ -123,7 +124,7 @@
 <div class="modal" id="rv-modal" role="dialog" aria-modal="true" aria-label="로드뷰">
   <div class="modal-box">
     <div class="modal-head"><b>📷 로드뷰</b><button id="rv-close">닫기 ✕</button></div>
-    <div id="roadview"><div id="rv-msg"></div></div>
+    <div id="rv-wrap"><div id="roadview"></div><div id="rv-msg"></div></div>
   </div>
 </div>
 
