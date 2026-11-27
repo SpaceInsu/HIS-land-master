@@ -142,20 +142,21 @@ function show(id) { document.querySelectorAll('.screen').forEach(s => s.classLis
 // ===== 카카오 지도 (키가 없거나 실패하면 단순 지도로 대체) =====
 let kakaoReady = false, kmap = null, kmarker = null, rv = null, rvClient = null;
 function getKey() { try { return KAKAO_JS_KEY || localStorage.getItem('kakaoKey') || ''; } catch (e) { return KAKAO_JS_KEY; } }
+function setStatus(t) { const el = $('key-status'); if (el) el.textContent = t; else console.log('[map]', t); }
 function loadKakao() {
   const key = getKey();
-  if (!key) { $('key-status').textContent = '키 없음: 단순 지도로 동작합니다.'; return; }
+  if (!key) { setStatus('키 없음: 단순 지도로 동작합니다.'); return; }
   const s = document.createElement('script');
   s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(key)}&autoload=false&libraries=services`;
   s.onload = () => kakao.maps.load(() => {
     kakaoReady = true;
-    $('key-status').textContent = '✅ 카카오 지도 연결됨';
+    setStatus('카카오 지도 연결됨');
     if (state) loadRound();
   });
-  s.onerror = () => { $('key-status').textContent = '⚠️ 카카오 지도를 불러오지 못했습니다(키 또는 도메인 등록 확인). 단순 지도로 동작합니다.'; };
+  s.onerror = () => { setStatus('카카오 지도를 불러오지 못했습니다(키 또는 도메인 등록 확인). 단순 지도로 동작합니다.'); };
   document.head.appendChild(s);
 }
-$('key-save').addEventListener('click', () => {
+$('key-save') && $('key-save').addEventListener('click', () => {
   try { localStorage.setItem('kakaoKey', $('key-input').value.trim()); } catch (e) {}
   location.reload();
 });
@@ -275,14 +276,59 @@ function loadRound() {
   const q = state.pool[state.i];
   $('round-label').textContent = `라운드 ${state.i + 1} / ${ROUNDS}`;
   $('total-label').textContent = `누적 ${state.total.toLocaleString()}점`;
-  $('hints').innerHTML = [
-    ['지역', q.region], ['전용면적', `${q.area}㎡ (약 ${Math.round(q.area / 3.3058)}평)`],
-    ...(q.floor ? [['층', `${q.floor}층`]] : []), ...(q.built ? [['준공', `${q.built}년`]] : []),
-    [q.kb ? '시세 기준' : '거래 시점', q.ym],
-  ].map(([k, v]) => `<div><span>${k}</span><span>${v}</span></div>`).join('');
+  renderHints(q);
+  enrich(q);
   setGuess(50000);
   if (kakaoReady) drawKakao(q); else drawSvg(q);
 }
+// ===== 단지 세부정보 (힌트) =====
+const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function renderHints(q) {
+  const pend = '확인 중…';
+  const rows = [
+    ['아파트', q.name], ['지역', q.region],
+    ['준공', q.built ? `${q.built}년` : (q.builtNote || '정보 준비 중')],
+    ['세대수', q.households ? `${q.households.toLocaleString()}세대` : (q.hhNote || '정보 준비 중')],
+    ['전용면적', `${q.area}㎡ (약 ${Math.round(q.area / 3.3058)}평)`],
+    ...(q.floor ? [['층', `${q.floor}층`]] : []),
+    ['평지 여부', q.flat || (q.enriching ? pend : '-')],
+    ['초등학교', q.school || (q.enriching ? pend : '-')],
+    [q.kb ? '시세 기준' : '거래 시점', q.ym],
+  ];
+  $('hints').innerHTML = rows.map(([k, v]) => `<div><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join('');
+}
+// 가장 가까운 초등학교 (카카오 장소검색, 학교 카테고리)
+function findSchool(q) {
+  return new Promise(res => {
+    if (!kakaoReady || !kakao.maps.services) return res(null);
+    new kakao.maps.services.Places().categorySearch('SC4', (d, st) => {
+      if (st !== kakao.maps.services.Status.OK) return res('반경 1.5km 안에 없음');
+      const e = d.find(x => /초등학교/.test(x.place_name));
+      if (!e) return res('반경 1.5km 안에 없음');
+      const m = +e.distance;
+      res(`${e.place_name.replace(/^.*\s/, '')} · 약 ${m >= 1000 ? (m / 1000).toFixed(1) + 'km' : Math.round(m / 10) * 10 + 'm'} (도보 ${Math.max(1, Math.round(m / 67))}분)`);
+    }, { location: new kakao.maps.LatLng(q.lat, q.lng), radius: 1500, sort: kakao.maps.services.SortBy.DISTANCE });
+  });
+}
+// 평지 여부: 단지 중심과 주변 4곳(약 150m)의 해발고도 차이로 추정 (Open-Meteo 고도 API, 키 불필요)
+async function findSlope(q) {
+  const dl = 0.00135, dg = 0.0017;
+  const pts = [[0, 0], [dl, 0], [-dl, 0], [0, dg], [0, -dg]].map(([a, b]) => [q.lat + a, q.lng + b]);
+  const u = `https://api.open-meteo.com/v1/elevation?latitude=${pts.map(p => p[0].toFixed(5)).join(',')}&longitude=${pts.map(p => p[1].toFixed(5)).join(',')}`;
+  const j = await fetch(u).then(r => r.json());
+  const el = j.elevation; if (!el || el.length < 5) return null;
+  const diff = Math.max(...el) - Math.min(...el);
+  const label = diff < 8 ? '평지' : diff < 20 ? '약간 경사' : '언덕·경사 심함';
+  return `${label} (주변 고도차 약 ${Math.round(diff)}m, 추정)`;
+}
+async function enrich(q) {
+  if (q.enriched || q.enriching) return;
+  q.enriching = true;
+  const [school, flat] = await Promise.all([findSchool(q).catch(() => null), findSlope(q).catch(() => null)]);
+  q.school = school || q.school; q.flat = flat || q.flat; q.enriching = false; q.enriched = true;
+  if (state && state.pool[state.i] === q && $('s-round').classList.contains('on')) renderHints(q);
+}
+
 function setGuess(p) {
   p = Math.max(MIN_P, Math.min(MAX_P, p));
   $('guess-text').textContent = won(p);
