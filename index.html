@@ -11,23 +11,19 @@
 </head>
 <body>
 <header>
-  <h1>이 집 얼마?<small>수도권 실거래가 맞히기</small></h1>
+  <h1>이 집 얼마?<small>수도권 아파트 시세 맞히기</small></h1>
   <span class="badge">초안 · 샘플(추정) 데이터</span>
 </header>
 <main>
   <section id="s-start" class="screen on">
     <div class="card center" style="max-width:560px;margin:40px auto;">
       <div class="stamp" aria-hidden="true">오늘의<br>매물</div>
-      <h2>지도 위 집의 실거래가를 맞혀보세요</h2>
+      <h2>지도 위 아파트, 얼마일까요?</h2>
       <p style="color:var(--muted)">출제 지역: 서울 · 경기 · 인천 · 5라운드</p>
       <button id="btn-start">게임 시작</button>
-      <p class="note">이 초안의 가격은 실거래가가 아닌 대략적인 추정값입니다.</p>
-      <details>
-        <summary>카카오 지도 키 설정 (개발·시험용)</summary>
-        <p>카카오 개발자 사이트의 <b>JavaScript 키</b>를 넣으면 실제 카카오맵과 로드뷰가 켜집니다. 키는 이 브라우저에만 저장됩니다. 이 페이지 주소가 카카오 앱 설정의 "사이트 도메인"에 등록되어 있어야 합니다.</p>
-        <div class="row"><input id="key-input" placeholder="JavaScript 키 붙여넣기"><button id="key-save">저장</button></div>
-        <p id="key-status"></p>
-      </details>
+      <p class="note"><b>정답은 어떻게 정하나요?</b><br>KB부동산이 매달 발표하는 동네(시·군·구)별 아파트 ㎡당 평균 시세 × 전용면적이에요. 실제 거래 가격이 아니라 '그 동네 같은 평수의 평균값'이라, 단지마다 실제 시세와 차이가 날 수 있어요.</p>
+      <!-- 예전 "카카오 키 설정" 칸: 키가 코드에 들어 있어 숨김. 스크립트가 이 id들을 찾으므로 요소는 남겨 둠 -->
+      <div hidden><input id="key-input"><button id="key-save"></button><p id="key-status"></p></div>
     </div>
   </section>
 
