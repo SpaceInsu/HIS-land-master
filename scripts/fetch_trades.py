@@ -11,7 +11,8 @@ import xml.etree.ElementTree as ET
 KEY = urllib.parse.unquote(os.environ.get("DATA_GO_KR_KEY", "").strip())  # Encoding 키를 넣어도 동작하게
 MONTHS = int(os.environ.get("MONTHS", "3"))
 PER_REGION = int(os.environ.get("PER_REGION", "12"))
-URL = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"
+# 사용자가 신청한 "아파트 매매 실거래가 상세 자료" API
+URL = os.environ.get("TRADE_URL", "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev")
 
 # (법정동 시군구 코드 5자리, 시도, 시군구 이름) — KB 데이터허브 지역 이름과 같게 맞춤
 REGIONS = [
