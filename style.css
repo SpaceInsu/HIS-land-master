@@ -12,7 +12,7 @@
   --stamp-soft: #f6d9cf;
   --mark: #ffd84a;       /* 형광펜 */
   --card: #fffdf7;
-  --display: "Black Han Sans", "IBM Plex Sans KR", sans-serif;
+  --display: var(--body);
   --body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 }
 
@@ -40,7 +40,7 @@ header {
   border-bottom: 4px solid var(--stamp);
 }
 header h1 {
-  margin: 0; font-family: var(--display); font-weight: 400;
+  margin: 0; font-family: var(--display); font-weight: 700;
   font-size: 26px; letter-spacing: -.5px; line-height: 1;
 }
 header h1 small {
@@ -65,7 +65,7 @@ main { max-width: 1120px; margin: 0 auto; padding: 18px 16px 40px; }
   padding: 20px;
   box-shadow: 5px 5px 0 var(--ink);
 }
-h2, h3 { font-family: var(--display); font-weight: 400; letter-spacing: -.3px; }
+h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: -.3px; }
 h2 { font-size: 26px; margin: 4px 0 10px; line-height: 1.25; }
 h3 { font-size: 18px; margin: 18px 0 8px; }
 
@@ -100,7 +100,7 @@ button.ghost:hover { background: var(--mark); }
   width: 84px; height: 84px; border-radius: 50%;
   border: 3px solid var(--stamp); color: var(--stamp);
   display: flex; align-items: center; justify-content: center; text-align: center;
-  font-family: var(--display); font-size: 15px; line-height: 1.1;
+  font-family: var(--display); font-weight: 700; font-size: 15px; line-height: 1.1;
   transform: rotate(12deg); background: rgba(255,253,247,.85);
 }
 
@@ -111,7 +111,7 @@ button.ghost:hover { background: var(--mark); }
   border-bottom: 2px solid var(--ink);
   font-weight: 700;
 }
-#round-label { font-family: var(--display); font-weight: 400; font-size: 20px; }
+#round-label { font-family: var(--display); font-weight: 700; font-size: 20px; }
 #total-label { background: var(--mark); padding: 2px 8px; }
 
 .grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 20px; align-items: start; }
@@ -156,7 +156,7 @@ button.ghost:hover { background: var(--mark); }
    - 보조 설명:       값 칸 안에 <small>도보 6분</small>                         */
 .hints div.name { padding: 12px 2px 10px; align-items: baseline; }
 .hints div.name span:last-child {
-  font-family: var(--display); font-weight: 400; font-size: 22px; line-height: 1.2;
+  font-family: var(--display); font-weight: 700; font-size: 22px; line-height: 1.2;
 }
 .hints div.sec {
   display: block; margin-top: 10px; padding: 6px 8px 5px;
@@ -172,7 +172,7 @@ button.ghost:hover { background: var(--mark); }
 
 /* 가격: 손글씨 대신 큰 간판 글씨 */
 .price {
-  font-family: var(--display); font-size: 44px; line-height: 1;
+  font-family: var(--display); font-weight: 700; font-size: 44px; line-height: 1;
   text-align: center; margin: 6px 0 14px; white-space: nowrap;
   padding: 14px 0 12px;
   border: 2px dashed var(--ink); background: var(--paper);
@@ -208,7 +208,7 @@ input[type=range]:focus-visible { outline: 3px solid var(--mark); }
 #r-addr { margin-top: -4px; }
 .big {
   display: inline-block; margin: 18px 0 6px;
-  font-family: var(--display); font-size: 52px; line-height: 1;
+  font-family: var(--display); font-weight: 700; font-size: 52px; line-height: 1;
   color: var(--stamp);
   padding: 10px 18px 8px;
   border: 4px double var(--stamp); border-radius: 6px;
@@ -246,7 +246,7 @@ summary { cursor: pointer; }
   display: flex; justify-content: space-between; align-items: center;
   padding: 8px 12px; background: var(--ink); color: var(--paper);
 }
-.modal-head b { font-family: var(--display); font-weight: 400; font-size: 18px; }
+.modal-head b { font-family: var(--display); font-weight: 700; font-size: 18px; }
 .modal-head button { min-height: 36px; padding: 6px 12px; font-size: 14px; background: var(--paper); color: var(--ink); border-color: var(--paper); box-shadow: none; }
 #rv-wrap { flex: 1; position: relative; background: #111; }
 #roadview { position: absolute; inset: 0; }
