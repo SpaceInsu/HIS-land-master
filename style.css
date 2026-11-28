@@ -343,6 +343,14 @@ td, th { vertical-align: middle; line-height: 1.5; }
 }
 #kakaomap img, #roadview img { max-width: none; }
 
+/* 예상 가격 눈금: 로그 눈금 위치(1·2·5·10·20·50억). 슬라이더 손잡이 반지름(13px)만큼 안쪽에서 시작 */
+.ticks { position: relative; display: block; height: 26px; margin: 0 13px; }
+.ticks span { position: absolute; top: 8px; transform: translateX(-50%); white-space: nowrap; }
+.ticks span::before {
+  content: ""; position: absolute; left: 50%; top: -9px; width: 2px; height: 7px;
+  background: var(--ink); transform: translateX(-50%);
+}
+
 /* ---------- 휴대폰 ---------- */
 @media (max-width: 800px) {
   .grid { grid-template-columns: 1fr; }

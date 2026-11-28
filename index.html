@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261128a">
+<link rel="stylesheet" href="style.css?v=20261128b">
 </head>
 <body>
 <header>
@@ -45,7 +45,7 @@
         <h3>내 예상 가격</h3>
         <div class="price" id="guess-text">5억</div>
         <input type="range" id="guess-range" min="0" max="1000" value="500" aria-label="예상 가격">
-        <div class="ticks"><span>1억</span><span>50억</span></div>
+        <div class="ticks" aria-hidden="true"><span style="left:0.00%">1억</span><span style="left:17.72%">2억</span><span style="left:41.14%">5억</span><span style="left:58.86%">10억</span><span style="left:76.58%">20억</span><span style="left:100.00%">50억</span></div>
         <div class="row"><input type="number" id="guess-num" min="10000" max="500000" step="1000" value="50000"><span>만원</span></div>
         <div class="row"><button id="btn-submit" style="flex:1">제출</button></div>
       </div>
@@ -398,7 +398,7 @@ $('btn-again').addEventListener('click', start);
 loadKakao();
 }
 </script>
-<script src="feedback.js?v=20261128a" defer></script>
-<script src="ui.js?v=20261128a" defer></script>
+<script src="feedback.js?v=20261128b" defer></script>
+<script src="ui.js?v=20261128b" defer></script>
 </body>
 </html>
