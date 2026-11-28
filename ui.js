@@ -7,8 +7,9 @@
   const hints = document.getElementById('hints');
   if (!hints) return;
   const KEY = 'detailsOpen';
-  let open = true;
-  try { open = localStorage.getItem(KEY) !== '0'; } catch (_) {}
+  let open = false;
+  // 기본은 접힘. 사용자가 펼쳐 두면 그 선택을 기억
+  try { open = localStorage.getItem(KEY) === '1'; } catch (_) { open = false; }
 
   let moving = false;
   function apply() {

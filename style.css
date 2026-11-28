@@ -392,6 +392,30 @@ input[type=range]:focus-visible::-webkit-slider-thumb { outline: 3px solid var(-
 .ticks span[data-v="50"]::before { left: auto; right: 0; transform: none; }
 .ticks span.on { color: var(--ink); font-weight: 700; }
 
+/* ---------- 2026-11-28 3차 ---------- */
+/* 지도 위 버튼: 위아래 여백 줄임 */
+.maptools button { min-height: 0; height: 32px; padding: 0 12px; font-size: 13px; }
+.rv-float { min-height: 0; height: 38px; padding: 0 14px; font-size: 14px; box-shadow: 2px 2px 0 var(--ink); }
+
+/* 출제 지역 고르기 (여러 곳) */
+.regions { border: 0; padding: 0; margin: 4px 0 6px; display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.regions legend { width: 100%; text-align: center; font-size: 14px; color: var(--muted); margin-bottom: 8px; padding: 0; }
+.regions legend small { font-size: 12px; }
+.regions label { position: relative; cursor: pointer; }
+.regions input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.regions span {
+  display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px;
+  border: 2px solid var(--ink); border-radius: 999px; background: var(--card);
+  font-weight: 700; font-size: 15px; color: var(--muted); transition: background .1s, color .1s;
+}
+.regions span::before { content: ""; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; }
+.regions input:checked + span { background: var(--ink); color: var(--paper); }
+.regions input:checked + span::before { background: var(--stamp); border-color: var(--stamp); }
+.regions input:focus-visible + span { outline: 3px solid var(--mark); outline-offset: 2px; }
+.rounds-note { margin: 6px 0 18px; font-size: 13px; color: var(--muted); }
+.region-msg { margin: -8px 0 12px; font-size: 13px; font-weight: 700; color: var(--stamp); min-height: 0; }
+.region-msg:empty { display: none; }
+
 /* ---------- 휴대폰 ---------- */
 @media (max-width: 800px) {
   .grid { grid-template-columns: 1fr; }
@@ -409,3 +433,4 @@ input[type=range]:focus-visible::-webkit-slider-thumb { outline: 3px solid var(-
   .big { font-size: 42px; }
 }
 .note small { display: block; margin-top: 4px; font-size: 12px; }
+#s-start .card > p.rounds-note { margin: 6px 0 18px; }
