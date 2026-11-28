@@ -317,14 +317,14 @@ function renderHints(q) {
     row('아파트', esc(q.name), 'name'),
     row('지역', esc(q.region)),
     row('전용면적', `${q.area}㎡ <small>약 ${Math.round(q.area / 3.3058)}평</small>`),
-    q.kb ? row('시세 기준', esc(q.ym)) : row('최근 거래일', esc(q.date || q.ym)),
-    ...(q.kbAvg ? [row('참고 시세', `KB 동네 평균 ${won(q.kbAvg)} <small>같은 면적 기준</small>`)] : []),
     '<div class="sec">세부 정보</div>',
+    q.kb ? row('시세 기준', esc(q.ym)) : row('최근 거래일', esc(q.date || q.ym)),
     row('준공', q.built ? `${q.built}년` : esc(q.builtNote || '정보 준비 중')),
     row('세대수', q.households ? `${q.households.toLocaleString()}세대` : esc(q.hhNote || '정보 준비 중')),
     ...(q.floor ? [row('층', `${q.floor}층`)] : []),
     row('평지 여부', q.flat ? split(q.flat) : (q.enriching ? pend : '-')),
     row('초등학교', school),
+    row('역세권', q.station ? split(q.station) : (q.enriching ? pend : '-')),
   ].join('');
 }
 // 가장 가까운 초등학교 (카카오 장소검색, 학교 카테고리)
@@ -338,6 +338,19 @@ function findSchool(q) {
       const m = +e.distance;
       res(`${e.place_name.replace(/^.*\s/, '')} · 약 ${m >= 1000 ? (m / 1000).toFixed(1) + 'km' : Math.round(m / 10) * 10 + 'm'} (도보 ${Math.max(1, Math.round(m / 67))}분)`);
     }, { location: new kakao.maps.LatLng(q.lat, q.lng), radius: 1500, sort: kakao.maps.services.SortBy.DISTANCE });
+  });
+}
+// 역세권: 가장 가까운 지하철역 (카카오 장소검색 SW8, 직선거리 기준)
+function findStation(q) {
+  return new Promise(res => {
+    if (!kakaoReady || !kakao.maps.services) return res(null);
+    new kakao.maps.services.Places().categorySearch('SW8', (d, st) => {
+      if (st !== kakao.maps.services.Status.OK || !d.length) return res('역 없음 (반경 3km 안에 지하철역 없음)');
+      const e = d[0], m = +e.distance;
+      const label = m <= 500 ? '역세권' : m <= 1000 ? '역 근처' : '역과 멂';
+      const dist = m >= 1000 ? (m / 1000).toFixed(1) + 'km' : Math.round(m / 10) * 10 + 'm';
+      res(`${label} (${e.place_name} · 약 ${dist}, 도보 ${Math.max(1, Math.round(m / 67))}분)`);
+    }, { location: new kakao.maps.LatLng(q.lat, q.lng), radius: 3000, sort: kakao.maps.services.SortBy.DISTANCE });
   });
 }
 // 평지 여부: 단지 중심과 주변 4곳(약 150m)의 해발고도 차이로 추정 (Open-Meteo 고도 API, 키 불필요)
@@ -354,8 +367,8 @@ async function findSlope(q) {
 async function enrich(q) {
   if (q.enriched || q.enriching) return;
   q.enriching = true;
-  const [school, flat] = await Promise.all([findSchool(q).catch(() => null), findSlope(q).catch(() => null)]);
-  q.school = school || q.school; q.flat = flat || q.flat; q.enriching = false; q.enriched = true;
+  const [school, flat, station] = await Promise.all([findSchool(q).catch(() => null), findSlope(q).catch(() => null), findStation(q).catch(() => null)]);
+  q.school = school || q.school; q.flat = flat || q.flat; q.station = station || q.station; q.enriching = false; q.enriched = true;
   if (state && state.pool[state.i] === q && $('s-round').classList.contains('on')) renderHints(q);
 }
 
