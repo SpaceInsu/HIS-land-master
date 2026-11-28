@@ -9,3 +9,4 @@
 - 글씨체: 제목·가격용 Black Han Sans를 빼고 전부 IBM Plex Sans KR(산세리프) 굵게로 통일 (PR #2)
 - 의견 보내기를 구글 폼 대신 시트 직접 기록으로 변경: tools/feedback-apps-script.gs(시트에 붙일 코드), feedback.js ENDPOINT
 - 피드백 2차: 전용면적 줄 강조, 오른쪽 '로드뷰로 동네 둘러보기' 숨김, 카카오 확대·축소 버튼에 게임 버튼 모양이 번지지 않게 차단, 세부 정보 접기·펴기(ui.js)
+- 2026-11-28: 휴대폰이 예전 CSS를 기억하는 문제 → style.css·ui.js·feedback.js 주소에 ?v=날짜 붙임. 참고 시세 줄 빼기, 최근 거래일을 세부 정보 안으로 (ui.js)
