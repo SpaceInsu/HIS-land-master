@@ -11,7 +11,8 @@ import xml.etree.ElementTree as ET
 KEY = urllib.parse.unquote(os.environ.get("DATA_GO_KR_KEY", "").strip())  # Encoding 키를 넣어도 동작하게
 MONTHS = int(os.environ.get("MONTHS", "3"))
 PER_REGION = int(os.environ.get("PER_REGION", "12"))
-URL = "https://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade"
+# 사용자가 신청한 "아파트 매매 실거래가 상세 자료" API
+URL = os.environ.get("TRADE_URL", "https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev")
 
 # (법정동 시군구 코드 5자리, 시도, 시군구 이름) — KB 데이터허브 지역 이름과 같게 맞춤
 REGIONS = [
@@ -53,11 +54,22 @@ def t(item, *names):
     return ""
 
 def fetch(lawd, ym):
+    # 국토부 서버가 자주 느리거나 503을 줘서 최대 4번까지 다시 시도
+    import time
+    for attempt in range(4):
+        try:
+            return _fetch(lawd, ym)
+        except Exception as e:
+            if "SERVICE_KEY" in str(e) or attempt == 3:
+                raise
+            time.sleep(3 * (attempt + 1))
+
+def _fetch(lawd, ym):
     rows, page = [], 1
     while True:
         q = urllib.parse.urlencode({"serviceKey": KEY, "LAWD_CD": lawd, "DEAL_YMD": ym, "numOfRows": 1000, "pageNo": page})
         try:
-            with urllib.request.urlopen(f"{URL}?{q}", timeout=30) as r:
+            with urllib.request.urlopen(f"{URL}?{q}", timeout=60) as r:
                 body = r.read()
         except urllib.error.HTTPError as e:
             raise RuntimeError(f"HTTP {e.code} {lawd} {ym}: {e.read()[:300].decode('utf-8', 'replace')}")
@@ -75,8 +87,18 @@ def fetch(lawd, ym):
 def main():
     if not KEY:
         sys.exit("DATA_GO_KR_KEY 가 없습니다 (GitHub 저장소 Settings → Secrets → Actions 에 등록)")
+    raw = os.environ.get("DATA_GO_KR_KEY", "")
+    import re as _re
+    print(f"[키 점검] 길이 {len(raw)} / 앞뒤 공백 {'있음' if raw != raw.strip() else '없음'} / %포함 {'예' if '%' in raw else '아니오'}"
+          f" / 끝이 == {'예' if KEY.endswith('==') else '아니오'} / 허용 외 문자 {'있음' if _re.search(r'[^A-Za-z0-9+/=%]', raw.strip()) else '없음'}")
     yms = months_back(MONTHS)
     out, seen_regions, fails = [], 0, 0
+    prev = {}
+    try:
+        for it in json.load(open("data/questions.json", encoding="utf-8")).get("items", []):
+            prev.setdefault((it.get("sido"), it.get("sgg")), []).append(it)
+    except Exception:
+        pass
     for lawd, sido, sgg in REGIONS:
         best = {}
         for ym in yms:
@@ -109,6 +131,10 @@ def main():
                 if key not in best or rec["date"] > best[key]["date"]:
                     best[key] = rec
         recs = list(best.values())
+        if not recs and prev.get((sido, sgg)):
+            out += prev[(sido, sgg)]; seen_regions += 1
+            print(f"{sido} {sgg}: 이번엔 못 받아서 이전 문제 {len(prev[(sido, sgg)])}개 유지")
+            continue
         if recs:
             seen_regions += 1
             random.shuffle(recs)
