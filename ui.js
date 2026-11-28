@@ -45,3 +45,22 @@
   new MutationObserver(apply).observe(hints, { childList: true });
   apply();
 })();
+
+// ===== 예상 가격 슬라이더: 지나온 만큼 색칠, 가장 가까운 눈금 글씨 진하게 =====
+(() => {
+  const range = document.getElementById('guess-range');
+  const text = document.getElementById('guess-text');
+  if (!range) return;
+  const majors = [...document.querySelectorAll('.ticks span[data-v]')];
+  function paint() {
+    const min = +range.min || 0, max = +range.max || 100;
+    const r = (range.value - min) / (max - min);
+    range.style.setProperty('--p', (r * 100).toFixed(2) + '%');
+    let best = null, d = Infinity;
+    majors.forEach(s => { const x = Math.abs(parseFloat(s.style.left) / 100 - r); if (x < d) { d = x; best = s; } });
+    majors.forEach(s => s.classList.toggle('on', s === best && d < 0.04));
+  }
+  range.addEventListener('input', paint);
+  if (text) new MutationObserver(paint).observe(text, { childList: true, characterData: true, subtree: true });
+  paint();
+})();
