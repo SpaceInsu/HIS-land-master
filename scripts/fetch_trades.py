@@ -60,29 +60,73 @@ def fetch(lawd, ym):
         try:
             return _fetch(lawd, ym)
         except Exception as e:
-            if "SERVICE_KEY" in str(e) or attempt == 3:
+            if "SERVICE_KEY" in str(e) or "게이트웨이" in str(e) or attempt == 3:
                 raise
             time.sleep(3 * (attempt + 1))
 
+UA = {"User-Agent": "Mozilla/5.0 (compatible; his-land-data/1.0)", "Accept": "application/xml"}
+STATS = {}
+
+def _note(kind):
+    STATS[kind] = STATS.get(kind, 0) + 1
+
+def _get(url):
+    req = urllib.request.Request(url, headers=UA)
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return r.status, r.headers.get("Content-Type", ""), r.read()
+
 def _fetch(lawd, ym):
+    import time
     rows, page = [], 1
     while True:
         q = urllib.parse.urlencode({"serviceKey": KEY, "LAWD_CD": lawd, "DEAL_YMD": ym, "numOfRows": 1000, "pageNo": page})
+        time.sleep(0.3)  # 너무 몰아서 부르지 않기
         try:
-            with urllib.request.urlopen(f"{URL}?{q}", timeout=60) as r:
-                body = r.read()
+            status, ctype, body = _get(f"{URL}?{q}")
         except urllib.error.HTTPError as e:
+            _note(f"HTTP {e.code}")
             raise RuntimeError(f"HTTP {e.code} {lawd} {ym}: {e.read()[:300].decode('utf-8', 'replace')}")
-        root = ET.fromstring(body)
+        except Exception as e:
+            _note(type(e).__name__)
+            raise
+        snippet = body[:300].decode("utf-8", "replace").replace(KEY, "***")
+        try:
+            root = ET.fromstring(body)
+        except ET.ParseError:
+            _note("XML 아님")
+            raise RuntimeError(f"XML이 아닌 응답 {lawd} {ym} ({ctype}): {snippet}")
+        # 공공데이터포털 게이트웨이 오류(키·호출량 초과 등)는 모양이 다름
+        reason = root.findtext(".//returnReasonCode") or root.findtext(".//errMsg")
+        if reason:
+            msg = root.findtext(".//returnAuthMsg") or reason
+            _note(f"게이트웨이 {msg}")
+            raise RuntimeError(f"게이트웨이 오류 {lawd} {ym}: {msg} ({reason})")
         code = root.findtext(".//resultCode") or ""
-        if code not in ("00", "000", ""):
-            raise RuntimeError(f"API 오류 {lawd} {ym}: {code} {root.findtext('.//resultMsg')}")
+        if code not in ("00", "000"):
+            _note(f"결과코드 {code or '없음'}")
+            raise RuntimeError(f"API 오류 {lawd} {ym}: {code or '코드 없음'} {root.findtext('.//resultMsg')} / {snippet}")
+        if root.find(".//totalCount") is None:
+            _note("totalCount 없음")
+            raise RuntimeError(f"건수 정보 없는 응답 {lawd} {ym}: {snippet}")
         items = root.findall(".//item")
         rows += items
         total = int(root.findtext(".//totalCount") or 0)
+        _note("정상" if total else "정상(0건)")
         if page * 1000 >= total or not items:
             return rows
         page += 1
+
+def probe():
+    """시작 전에 1번만 불러보고 응답 모양을 기록 (키는 가림)"""
+    ym = months_back(2)[1]
+    q = urllib.parse.urlencode({"serviceKey": KEY, "LAWD_CD": "11680", "DEAL_YMD": ym, "numOfRows": 5, "pageNo": 1})
+    for base in (URL, URL.replace("https://", "http://")):
+        try:
+            status, ctype, body = _get(f"{base}?{q}")
+            print(f"[시험 호출] {base.split('/')[0]} 강남구 {ym}: HTTP {status}, {ctype}, {len(body)}바이트")
+            print("  응답 앞부분:", body[:400].decode("utf-8", "replace").replace(KEY, "***").replace("\n", " "))
+        except Exception as e:
+            print(f"[시험 호출] {base.split('/')[0]} 실패: {type(e).__name__} {str(e)[:200]}")
 
 def main():
     if not KEY:
@@ -91,6 +135,7 @@ def main():
     import re as _re
     print(f"[키 점검] 길이 {len(raw)} / 앞뒤 공백 {'있음' if raw != raw.strip() else '없음'} / %포함 {'예' if '%' in raw else '아니오'}"
           f" / 끝이 == {'예' if KEY.endswith('==') else '아니오'} / 허용 외 문자 {'있음' if _re.search(r'[^A-Za-z0-9+/=%]', raw.strip()) else '없음'}")
+    probe()
     yms = months_back(MONTHS)
     out, seen_regions, fails = [], 0, 0
     prev = {}
@@ -146,6 +191,7 @@ def main():
                 if len(picked) >= PER_REGION: break
             out += picked
         print(f"{sido} {sgg}: 거래 {len(recs)}건 → {min(len(recs), PER_REGION)}문제")
+    print("[호출 결과 집계]", ", ".join(f"{k} {v}회" for k, v in sorted(STATS.items(), key=lambda x: -x[1])))
     if len(out) < 20:
         sys.exit(f"문제가 너무 적습니다({len(out)}). 키나 API 상태를 확인하세요.")
     data = {"source": "국토교통부 아파트 매매 실거래가", "updated": datetime.date.today().isoformat(),
