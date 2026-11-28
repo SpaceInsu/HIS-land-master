@@ -117,7 +117,8 @@ def _fetch(lawd, ym):
         page += 1
 
 def probe():
-    """시작 전에 1번만 불러보고 응답 모양을 기록 (키는 가림)"""
+    """시작 전에 1번만 불러보고 응답 모양을 기록 (키는 가림). 정상이면 True"""
+    ok = False
     ym = months_back(2)[1]
     q = urllib.parse.urlencode({"serviceKey": KEY, "LAWD_CD": "11680", "DEAL_YMD": ym, "numOfRows": 5, "pageNo": 1})
     for base in (URL, URL.replace("https://", "http://")):
@@ -125,8 +126,10 @@ def probe():
             status, ctype, body = _get(f"{base}?{q}")
             print(f"[시험 호출] {base.split('/')[0]} 강남구 {ym}: HTTP {status}, {ctype}, {len(body)}바이트")
             print("  응답 앞부분:", body[:400].decode("utf-8", "replace").replace(KEY, "***").replace("\n", " "))
+            ok = ok or b"returnReasonCode" not in body
         except Exception as e:
             print(f"[시험 호출] {base.split('/')[0]} 실패: {type(e).__name__} {str(e)[:200]}")
+    return ok
 
 def main():
     if not KEY:
@@ -135,7 +138,9 @@ def main():
     import re as _re
     print(f"[키 점검] 길이 {len(raw)} / 앞뒤 공백 {'있음' if raw != raw.strip() else '없음'} / %포함 {'예' if '%' in raw else '아니오'}"
           f" / 끝이 == {'예' if KEY.endswith('==') else '아니오'} / 허용 외 문자 {'있음' if _re.search(r'[^A-Za-z0-9+/=%]', raw.strip()) else '없음'}")
-    probe()
+    if not probe():
+        print("국토부 쪽이 지금 응답하지 않아 이번엔 건너뜁니다. 기존 문제집 그대로 유지 (다음 예약 시간에 다시 시도)")
+        return
     yms = months_back(MONTHS)
     out, seen_regions, fails = [], 0, 0
     prev = {}
