@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="style.css?v=20261128d">
+<link rel="stylesheet" href="style.css?v=20261128e">
 </head>
 <body>
 <header>
@@ -19,7 +19,14 @@
     <div class="card center" style="max-width:560px;margin:40px auto;">
       <div class="stamp" aria-hidden="true">오늘의<br>매물</div>
       <h2>지도 위 아파트, 얼마일까요?</h2>
-      <p style="color:var(--muted)">출제 지역: 서울 · 경기 · 인천 · 5라운드</p>
+      <fieldset class="regions">
+        <legend>출제 지역 <small>(여러 곳 고를 수 있어요)</small></legend>
+        <label><input type="checkbox" name="region" value="서울" checked><span>서울</span></label>
+        <label><input type="checkbox" name="region" value="경기" checked><span>경기</span></label>
+        <label><input type="checkbox" name="region" value="인천" checked><span>인천</span></label>
+      </fieldset>
+      <p class="rounds-note" id="rounds-note">10라운드</p>
+      <p class="region-msg" id="region-msg" role="alert"></p>
       <button id="btn-start">게임 시작</button>
       <p class="note"><b>정답은 어떻게 정하나요?</b><br>그 아파트 단지가 최근 3개월 안에 실제로 팔린 가격(국토부 실거래가)이에요. 결과 화면에서 이 단지가 같은 동네 평균(KB 시세)보다 얼마나 비싸거나 싼지도 함께 보여 드려요.<br><small>실거래 자료를 아직 못 받은 동안에는 KB 동네 평균으로 대신 채점해요.</small></p>
       <!-- 예전 "카카오 키 설정" 칸: 키가 코드에 들어 있어 숨김. 스크립트가 이 id들을 찾으므로 요소는 남겨 둠 -->
@@ -70,7 +77,7 @@
     <div class="card center" style="max-width:640px;margin:20px auto;">
       <h2>최종 점수</h2>
       <div class="big" id="f-total"></div>
-      <p style="color:var(--muted)">만점 25,000점</p>
+      <p style="color:var(--muted)" id="f-max">만점 50,000점</p>
       <table id="f-table"></table>
       <div class="row" style="justify-content:center"><button id="btn-again">다시 하기</button></div>
       <p style="color:var(--muted);font-size:13px">친구와 대결·순위표, 서민형/금수저형 체급 모드는 다음 단계에서 추가 예정</p>
@@ -105,7 +112,7 @@ const SAMPLE = [
   { name:"송도동 ○○(예시)",       region:"인천 연수구 송도동", area:84, floor:25, built:2016, ym:"2026-09", price:80000,  lat:37.3920, lng:126.6390 },
   { name:"부평동 ○○(예시)",       region:"인천 부평구 부평동", area:59, floor:6,  built:1996, ym:"2026-07", price:35000,  lat:37.4930, lng:126.7230 },
 ];
-const ROUNDS = 5, MAX = 5000;
+const ROUNDS = 10, MAX = 5000;
 // 실제 문제집: data/questions.json 이 있으면 그것을 쓰고, 없으면 위 SAMPLE 사용
 let QUESTIONS = SAMPLE, DATA_SOURCE = '샘플(추정)', REAL = null, REAL_META = null;
 fetch('data/questions.json', { cache: 'no-store' })
@@ -243,7 +250,7 @@ function searchApts(r) {
 }
 async function buildKbQuestions() {
   const out = [];
-  for (const r of shuffle([...KB_REGIONS])) {
+  for (const r of shuffle(KB_REGIONS.filter(r => inRegion(r.sido)))) {
     if (out.length >= ROUNDS) break;
     const apts = await searchApts(r);
     if (!apts.length) continue;
@@ -264,7 +271,7 @@ function geocode(addr) {
 }
 async function buildRealQuestions() {
   const out = [];
-  for (const q0 of shuffle([...REAL]).slice(0, 25)) {
+  for (const q0 of shuffle(REAL.filter(q => inRegion(q.sido))).slice(0, 40)) {
     if (out.length >= ROUNDS) break;
     if (out.some(o => o.name === q0.name)) continue;
     const pos = await geocode(q0.address);
@@ -276,7 +283,16 @@ async function buildRealQuestions() {
   }
   return out;
 }
+// 출제 지역 (서울·경기·인천 중 여러 곳 선택, 이 기기에 기억)
+let REGIONS = ['서울', '경기', '인천'];
+const inRegion = sido => REGIONS.includes(String(sido || '').slice(0, 2));
+const regionBoxes = [...document.querySelectorAll('input[name=region]')];
+try { const saved = JSON.parse(localStorage.getItem('regions') || 'null'); if (Array.isArray(saved) && saved.length) regionBoxes.forEach(b => b.checked = saved.includes(b.value)); } catch (e) {}
+regionBoxes.forEach(b => b.addEventListener('change', () => { $('region-msg').textContent = ''; }));
 async function start() {
+  REGIONS = regionBoxes.filter(b => b.checked).map(b => b.value);
+  if (!REGIONS.length) { show('s-start'); $('region-msg').textContent = '출제 지역을 하나 이상 골라 주세요.'; return; }
+  try { localStorage.setItem('regions', JSON.stringify(REGIONS)); } catch (e) {}
   let pool = null;
   if (kakaoReady && REAL && kakao.maps.services) {
     $('btn-start').textContent = '문제 만드는 중…';
@@ -292,7 +308,10 @@ async function start() {
     if (!pool || pool.length < ROUNDS) pool = null;
   }
   if (pool && pool[0].kb) document.querySelector('.badge').textContent = `KB부동산 ${KB_META.basis} 동네 평균 기준`;
-  if (!pool) pool = shuffle([...QUESTIONS]).slice(0, ROUNDS);
+  if (!pool) {
+    const local = QUESTIONS.filter(q => inRegion(q.region));
+    pool = shuffle(local.length >= ROUNDS ? local : [...QUESTIONS]).slice(0, ROUNDS);
+  }
   state = { pool, i: 0, total: 0, log: [] };
   show('s-round');
   loadRound();
@@ -411,7 +430,7 @@ $('btn-again').addEventListener('click', start);
 loadKakao();
 }
 </script>
-<script src="feedback.js?v=20261128d" defer></script>
-<script src="ui.js?v=20261128d" defer></script>
+<script src="feedback.js?v=20261128e" defer></script>
+<script src="ui.js?v=20261128e" defer></script>
 </body>
 </html>
