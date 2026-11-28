@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20261128d">
 </head>
 <body>
 <header>
@@ -21,7 +21,7 @@
       <h2>지도 위 아파트, 얼마일까요?</h2>
       <p style="color:var(--muted)">출제 지역: 서울 · 경기 · 인천 · 5라운드</p>
       <button id="btn-start">게임 시작</button>
-      <p class="note"><b>정답은 어떻게 정하나요?</b><br>그 아파트 단지가 최근 3개월 안에 실제로 팔린 가격(국토부 실거래가)이에요. 문제 화면의 '참고 시세'는 그 동네 같은 평수의 KB 평균이라, 결과에서 이 단지가 동네 평균보다 얼마나 비싸거나 싼지 볼 수 있어요.<br><small>실거래 자료를 아직 못 받은 동안에는 KB 동네 평균으로 대신 채점해요.</small></p>
+      <p class="note"><b>정답은 어떻게 정하나요?</b><br>그 아파트 단지가 최근 3개월 안에 실제로 팔린 가격(국토부 실거래가)이에요. 결과 화면에서 이 단지가 같은 동네 평균(KB 시세)보다 얼마나 비싸거나 싼지도 함께 보여 드려요.<br><small>실거래 자료를 아직 못 받은 동안에는 KB 동네 평균으로 대신 채점해요.</small></p>
       <!-- 예전 "카카오 키 설정" 칸: 키가 코드에 들어 있어 숨김. 스크립트가 이 id들을 찾으므로 요소는 남겨 둠 -->
       <div hidden><input id="key-input"><button id="key-save"></button><p id="key-status"></p></div>
     </div>
@@ -45,7 +45,7 @@
         <h3>내 예상 가격</h3>
         <div class="price" id="guess-text">5억</div>
         <input type="range" id="guess-range" min="0" max="1000" value="500" aria-label="예상 가격">
-        <div class="ticks"><span>1억</span><span>50억</span></div>
+        <div class="ticks" aria-hidden="true"><span class="minor" style="left:28.08%"></span><span class="minor" style="left:35.44%"></span><span class="minor" style="left:45.80%"></span><span class="minor" style="left:49.74%"></span><span class="minor" style="left:53.16%"></span><span class="minor" style="left:56.17%"></span><span class="minor" style="left:86.94%"></span><span class="minor" style="left:94.30%"></span><span data-v="1" style="left:0.00%">1억</span><span data-v="2" style="left:17.72%">2억</span><span data-v="5" style="left:41.14%">5억</span><span data-v="10" style="left:58.86%">10억</span><span data-v="20" style="left:76.58%">20억</span><span data-v="50" style="left:100.00%">50억</span></div>
         <div class="row"><input type="number" id="guess-num" min="10000" max="500000" step="1000" value="50000"><span>만원</span></div>
         <div class="row"><button id="btn-submit" style="flex:1">제출</button></div>
       </div>
@@ -411,7 +411,7 @@ $('btn-again').addEventListener('click', start);
 loadKakao();
 }
 </script>
-<script src="feedback.js" defer></script>
-<script src="ui.js" defer></script>
+<script src="feedback.js?v=20261128d" defer></script>
+<script src="ui.js?v=20261128d" defer></script>
 </body>
 </html>
