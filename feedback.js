@@ -1,16 +1,12 @@
 // ===== 의견 보내기 (피드백) =====
-// 게임 화면 어디서나 [의견 보내기]를 누르면 작은 창이 뜨고, 보낸 의견은 구글 폼 → 구글 시트에 쌓입니다.
+// 게임 화면 어디서나 [의견 보내기]를 누르면 작은 창이 뜨고, 보낸 의견은 구글 시트에 바로 한 줄씩 쌓입니다.
 // 어느 화면·어느 문제에서 쓴 글인지, 화면 크기가 얼마인지 함께 자동으로 붙습니다.
 // 게임 스크립트(index.html)와는 따로 동작합니다. 화면 내용은 읽기만 합니다.
 (() => {
-  // 구글 폼 연결 정보. 비어 있으면 이 브라우저에만 임시 보관합니다.
-  // FORM_ID: 폼 주소 docs.google.com/forms/d/e/<여기>/viewform
-  // ENTRY:   각 질문의 entry 번호 (미리 채워진 링크에서 확인)
-  const FORM_ID = '';
-  const ENTRY = { body: '', page: '', item: '', viewport: '', ua: '' };
-
-  const $ = s => document.querySelector(s);
-  const ready = () => FORM_ID && ENTRY.body;
+  // 의견 시트 연결 주소 (구글 Apps Script 웹 앱 …/exec). 비어 있으면 이 브라우저에만 임시 보관합니다.
+  // 시트 쪽 코드는 tools/feedback-apps-script.gs
+  const ENDPOINT = '';
+  const ready = () => !!ENDPOINT;
 
   // 지금 보고 있는 화면과 문제를 읽어 옴
   function context() {
@@ -75,14 +71,8 @@
     const rec = { body, ...ctx, at: new Date().toISOString() };
     try {
       if (!ready()) throw new Error('not-configured');
-      const fd = new FormData();
-      fd.append(`entry.${ENTRY.body}`, rec.body);
-      if (ENTRY.page) fd.append(`entry.${ENTRY.page}`, rec.page);
-      if (ENTRY.item) fd.append(`entry.${ENTRY.item}`, rec.item);
-      if (ENTRY.viewport) fd.append(`entry.${ENTRY.viewport}`, rec.viewport);
-      if (ENTRY.ua) fd.append(`entry.${ENTRY.ua}`, rec.ua);
-      // 구글 폼은 응답 내용을 돌려주지 않으므로(no-cors) 네트워크 오류만 실패로 봅니다
-      await fetch(`https://docs.google.com/forms/d/e/${FORM_ID}/formResponse`, { method: 'POST', mode: 'no-cors', body: fd });
+      // text/plain으로 보내면 브라우저 사전 확인 없이 바로 전달됩니다. 응답은 읽지 못하므로(no-cors) 네트워크 오류만 실패로 봅니다
+      await fetch(ENDPOINT, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(rec) });
       sessionStorage.setItem('fbLast', String(Date.now()));
       text.value = ''; msg.textContent = '고마워요! 잘 받았어요.';
       setTimeout(close, 1200);

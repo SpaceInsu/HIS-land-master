@@ -12,15 +12,15 @@ description: 집값 게임 "이 집 얼마?"의 [의견 보내기]로 들어온 
 ## 흐름
 ```
 [게임 머리줄 → 의견 보내기]  feedback.js
-   │  구글 폼 formResponse로 POST: 의견, 화면(시작/문제·라운드/결과/최종), 문제(단지·지역), 화면크기, 기기
+   │  Apps Script 웹 앱(…/exec)으로 POST: 의견, 화면(시작/문제·라운드/결과/최종), 문제(단지·지역), 화면크기, 기기
    ▼
-[구글 폼 응답 시트]  (Google Sheets 커넥터로 읽기만)
-   │  열: 타임스탬프 · 의견 · 화면 · 문제 · 화면크기 · 기기 · 상태(직접 추가한 열: 빈칸=new / done)
+[구글 시트 "HIS-land-master" 시트1]  (시트 쪽 코드: tools/feedback-apps-script.gs. 우리는 Google Sheets 커넥터로 읽기만)
+   │  열: 받은 시각 · 의견 · 화면 · 문제(단지·지역) · 화면크기 · 기기 · 상태(빈칸=new / done)
    ▼
 [분류 → 구현 → 전/후 캡처 → 보고 → 사용자 승인 → 상태 열에 done]
 ```
-- 폼 연결 정보는 `feedback.js`의 `FORM_ID`, `ENTRY`. 비어 있으면 의견은 보낸 사람 브라우저(localStorage `fbQueue`)에만 남는다.
-- 시트 주소는 프로젝트 메모리(korea-house-guess)에 적는다.
+- 연결 주소는 `feedback.js`의 `ENDPOINT`. 비어 있으면 의견은 보낸 사람 브라우저(localStorage `fbQueue`)에만 남는다.
+- 시트 ID: 1IctOFrxMNWClj6-CxhtCGfVMzCmLuQvBA3sTtYnEwZY (프로젝트 메모리에도 있음)
 
 ## 절대 규칙
 - main 직접 push 금지. 세션 지정 브랜치 → PR. 사용자가 "합쳐/배포"라고 해야 머지.
