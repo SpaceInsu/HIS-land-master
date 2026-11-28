@@ -2,7 +2,7 @@ name: 실거래가 문제집 갱신
 
 on:
   schedule:
-    - cron: "0 18 * * *"   # 매일 한국시간 새벽 3시
+    - cron: "0 18,0,6,12 * * *"   # 하루 4번 (한국시간 3·9·15·21시) — 국토부가 멈춰 있으면 건너뛰고 다음에 재시도
   workflow_dispatch: {}
 
 permissions:
