@@ -416,10 +416,15 @@ input[type=range]:focus-visible::-webkit-slider-thumb { outline: 3px solid var(-
 .region-msg { margin: -8px 0 12px; font-size: 13px; font-weight: 700; color: var(--stamp); min-height: 0; }
 .region-msg:empty { display: none; }
 
+/* ---------- 2026-11-28 4차: 지도 80%, 라운드줄 위 여백 줄임 ---------- */
+#mapbox { height: 448px; }
+main { padding-top: 10px; }
+.topbar { margin-bottom: 10px; padding-bottom: 6px; min-height: 0; }
+
 /* ---------- 휴대폰 ---------- */
 @media (max-width: 800px) {
   .grid { grid-template-columns: 1fr; }
-  #mapbox { height: 360px !important; }
+  #mapbox { height: 288px !important; }
   header { padding: 10px 14px; }
   header h1 { font-size: 22px; }
   header h1 small { display: none; }
